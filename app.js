@@ -105,10 +105,12 @@ function displayEnergyTags(card){
 function buildCardImage(card){ const p=card.palette||['#8267b8','#d7b463','#15121d']; const primary=p[0], secondary=p[1], accent=p[2]; const symbol=escapeHtml(card.symbol||'✦'); const title=escapeHtml(displayNumber(card) || String(card.id)); const name=escapeHtml(card.name.replace(/^LÁ \d+ - /,'')); const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600"><defs><radialGradient id="glow" cx="50%" cy="24%" r="55%"><stop offset="0" stop-color="'+secondary+'" stop-opacity="0.95"/><stop offset="0.38" stop-color="'+primary+'" stop-opacity="0.55"/><stop offset="1" stop-color="'+accent+'" stop-opacity="1"/></radialGradient></defs><rect width="400" height="600" rx="22" fill="#0d0c13"/><rect x="18" y="18" width="364" height="564" rx="18" fill="url(#glow)"/><rect x="34" y="34" width="332" height="532" rx="14" fill="none" stroke="#fff0b6" stroke-width="5" opacity="0.8"/><text x="200" y="190" text-anchor="middle" font-size="104" font-family="Georgia, serif" fill="#fff6dc">'+symbol+'</text><text x="200" y="75" text-anchor="middle" font-size="22" font-weight="800" font-family="Segoe UI, Arial" fill="#fff6dc">'+title+'</text><text x="200" y="535" text-anchor="middle" font-size="23" font-weight="800" font-family="Segoe UI, Arial" fill="#fff6dc">'+name.slice(0,22)+'</text></svg>'; return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg); }
 function makeTags(values){ return (values||[]).map(item => '<span class="tag">'+escapeHtml(item)+'</span>').join(''); }
 function makeKeywords(values){ return (values||[]).map(item => '<span class="keyword">'+escapeHtml(item)+'</span>').join(''); }
+function imageSrc(card){ return card.image || buildCardImage(card); }
+function fallbackImageAttr(card){ return ' onerror="this.onerror=null;this.src=\''+buildCardImage(card)+'\';"'; }
 function cardMatches(card){ const haystack = normalize([card.name,card.subtitle,card.vietnameseName,card.thaiName,card.englishName,card.sectionLabel].concat(card.aliases||[],card.energy||[],card.positiveKeywords||[],card.challengeKeywords||[]).join(' ')); const matchesQuery = !state.query || haystack.includes(normalize(state.query)); const matchesFilter = state.filter === 'Tất cả' || (card.energy || []).includes(state.filter); return matchesQuery && matchesFilter; }
 function renderFilters(){ els.filterBar.innerHTML = ENERGY_FILTERS.map(filter => '<button class="filter-button '+(filter===state.filter?'active':'')+'" type="button" data-filter="'+escapeHtml(filter)+'">'+escapeHtml(energyLabel(filter))+'</button>').join(''); }
 function renderToc(){ els.mainToc.innerHTML = state.mainCards.map(card => '<button type="button" data-card-id="'+card.uid+'"><span>'+escapeHtml(displayNumber(card))+'</span>'+escapeHtml(cardTitle(card))+'</button>').join(''); els.planetaryToc.innerHTML = state.planetaryCards.map(card => '<button type="button" data-card-id="'+card.uid+'"><span>'+escapeHtml(displayNumber(card))+'</span>'+escapeHtml(cardTitle(card))+'</button>').join(''); els.birthToc.innerHTML = state.birthCards.map(card => '<button type="button" data-card-id="'+card.uid+'"><span>'+escapeHtml(displayNumber(card))+'</span>'+escapeHtml(cardTitle(card))+'</button>').join(''); els.zodiacToc.innerHTML = state.zodiacCards.map(card => '<button type="button" data-card-id="'+card.uid+'"><span>'+escapeHtml(displayNumber(card))+'</span>'+escapeHtml(cardTitle(card))+'</button>').join(''); }
-function cardTile(card){ return '<button class="card-tile" type="button" data-card-id="'+card.uid+'"><span class="card-image-wrap"><img src="'+(card.image || buildCardImage(card))+'" alt="'+escapeHtml(displayNumber(card)+' - '+cardTitle(card))+'" loading="lazy"></span><span class="card-meta"><span class="card-number">'+escapeHtml(displayNumber(card))+'</span><span class="card-name">'+escapeHtml(cardTitle(card))+'</span><span class="card-subtitle">'+escapeHtml(cardSubtitle(card))+'</span></span></button>'; }
+function cardTile(card){ return '<button class="card-tile" type="button" data-card-id="'+card.uid+'"><span class="card-image-wrap"><img src="'+imageSrc(card)+'"'+fallbackImageAttr(card)+' alt="'+escapeHtml(displayNumber(card)+' - '+cardTitle(card))+'" loading="lazy"></span><span class="card-meta"><span class="card-number">'+escapeHtml(displayNumber(card))+'</span><span class="card-name">'+escapeHtml(cardTitle(card))+'</span><span class="card-subtitle">'+escapeHtml(cardSubtitle(card))+'</span></span></button>'; }
 
 function renderEnergyResults(){
   if (!els.energyResults || state.filter === 'Tất cả') {
@@ -132,7 +134,8 @@ function sameContent(a, b){
 }
 function renderModal(card){
   state.activeCard = card;
-  els.modalImage.src = card.image || buildCardImage(card);
+  els.modalImage.onerror = () => { els.modalImage.onerror = null; els.modalImage.src = buildCardImage(card); };
+  els.modalImage.src = imageSrc(card);
   els.modalImage.alt = displayNumber(card)+' - '+cardTitle(card);
   els.modalNumber.textContent = displayNumber(card);
   els.modalTitle.textContent = cardTitle(card);
@@ -581,7 +584,7 @@ function drawDailyCards(){
   const board = '<div class="daily-spread-board daily-spread-'+spread.positions.length+'" data-spread="'+mode+'">'+cards.map((card, index) => {
     const coordinate = coordinates[index] || [index + 1, 1];
     const position = spread.positions[index];
-    return '<button class="daily-spread-card" type="button" data-card-id="'+card.uid+'" style="grid-column:'+coordinate[0]+';grid-row:'+coordinate[1]+'"><span class="daily-spread-number">'+(index + 1)+'</span><span class="daily-card-image"><img src="'+(card.image || buildCardImage(card))+'" alt="'+escapeHtml(cardTitle(card))+'"></span><span class="daily-spread-name">'+escapeHtml(cardTitle(card))+'</span><span class="daily-spread-position">'+escapeHtml(position.title)+'</span></button>';
+    return '<button class="daily-spread-card" type="button" data-card-id="'+card.uid+'" style="grid-column:'+coordinate[0]+';grid-row:'+coordinate[1]+'"><span class="daily-spread-number">'+(index + 1)+'</span><span class="daily-card-image"><img src="'+imageSrc(card)+'"'+fallbackImageAttr(card)+' alt="'+escapeHtml(cardTitle(card))+'"></span><span class="daily-spread-name">'+escapeHtml(cardTitle(card))+'</span><span class="daily-spread-position">'+escapeHtml(position.title)+'</span></button>';
   }).join('')+'</div>';
   const meanings = '<div class="daily-meaning-list">'+cards.map((card, index) => {
     const position = spread.positions[index];
